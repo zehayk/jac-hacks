@@ -30,8 +30,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=960)
-    parser.add_argument("--height", help='cap height', type=int, default=540)
+    parser.add_argument("--width", help='cap width', type=int, default=CAMERA_DETECT_WIDTH)
+    parser.add_argument("--height", help='cap height', type=int, default=CAMERA_DETECT_HEIGHT)
 
     parser.add_argument('--use_static_image_mode', action='store_true')
     parser.add_argument("--min_detection_confidence",
@@ -185,7 +185,13 @@ def main(app_mode):
                 print(cur_window)
 
                 if hand_sign_id == 2:  # Point gesture
-                    point_history.append(landmark_list[8])
+                    if app_mode == 0:
+                        print("AAAAA")
+                        # print(hand_landmarks[8])
+                        laser_point_history(landmark_list[8])
+                        point_history.append([0, 0])
+                    else:
+                        point_history.append(landmark_list[8])
                 if app_mode == 0 and (hand_sign_id == 4 or hand_sign_id == 5):  # pptx actions
                     print("aa")
                     print(cur_window)
@@ -575,6 +581,11 @@ def draw_point_history(image, point_history):
     return image
 
 
+def laser_point_history(point):
+    if point[0] != 0 and point[1] != 0:
+        pyautogui.moveTo((point[0] * SCREEN_WIDTH)/CAMERA_DETECT_WIDTH, (point[1] * SCREEN_HEIGHT)/CAMERA_DETECT_HEIGHT)
+
+
 def draw_info(image, fps, mode, number):
     cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
                1.0, (0, 0, 0), 4, cv.LINE_AA)
@@ -616,6 +627,12 @@ def run_draw():
 
 
 if __name__ == '__main__':
+    SCREEN_WIDTH = 1920
+    SCREEN_HEIGHT = 1080
+
+    CAMERA_DETECT_WIDTH = 960
+    CAMERA_DETECT_HEIGHT = 540
+
     # run_powerpoint()
     # main()
     # app_mode -> 0: Present 1: Captcha 2: Draw
