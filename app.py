@@ -12,6 +12,7 @@ import time
 import os
 import threading
 import pyautogui
+from random import randint
 
 import cv2 as cv
 import numpy as np
@@ -137,7 +138,20 @@ def main(app_mode):
 
     #  ########################################################################
     mode = 0
+    captcha1 = [[433, 335], [414, 273], [375, 213], [353, 164], [352, 123], [360, 224], [276, 224], [296, 237],
+                [325, 238], [354, 268], [269, 261], [294, 270], [324, 274], [347, 311], [268, 299], [293, 305],
+                [323, 308], [340, 351], [280, 337], [299, 336], [325, 339]]
+    captcha2 = [[332, 347], [289, 336], [254, 296], [271, 258], [307, 249], [254, 233], [224, 197], [206, 173],
+                [191, 153], [282, 216], [271, 165], [263, 135], [256, 111], [310, 216], [312, 170], [309, 140],
+                [307, 115], [336, 228], [357, 196], [371, 173], [383, 153]]
+    captcha3 = [[478, 151], [430, 166], [392, 189], [360, 207], [333, 216], [431, 237], [420, 286], [414, 315],
+                [408, 339], [459, 247], [450, 300], [444, 332], [438, 357], [482, 249], [474, 298], [468, 328],
+                [464, 351], [500, 245], [506, 282], [512, 304], [518, 322]]
 
+    captcha_list = [captcha1, captcha2, captcha3]
+    landmark_list1 = captcha_list[randint(0, len(captcha_list) - 1)]
+    # landmark_list1 = captcha1
+    landmark_list1_unitaire = pre_process_landmark(landmark_list1)
     while True:
         fps = cvFpsCalc.get()
 
@@ -204,9 +218,9 @@ def main(app_mode):
 
                     point_history.append([0, 0])
 
-                if hand_sign_id == 2: 
+                if hand_sign_id == 2:
                     current_line_points.append([landmark_list[8][0], landmark_list[8][1]])
-                elif hand_sign_id == 3 and current_line_points:  
+                elif hand_sign_id == 3 and current_line_points:
                     completed_lines.append(current_line_points.copy())
                     current_line_points.clear()
 
@@ -231,20 +245,45 @@ def main(app_mode):
                     finger_gesture_history).most_common()
 
                 # Drawing part
+
                 debug_image = draw_bounding_rect(use_brect, debug_image, brect)
                 debug_image = draw_landmarks_and_eraser(debug_image, landmark_list, hand_sign_id)
-                debug_image = draw_info_text(
-                    debug_image,
-                    brect,
-                    handedness,
-                    keypoint_classifier_labels[hand_sign_id],
-                    point_history_classifier_labels[most_common_fg_id[0][0]],
-                )
+                if app_mode == 1:
+                    if close_enough(pre_processed_landmark_list, landmark_list1_unitaire):
+                        is_human = True
+                        # print("RAAAAAAAAAAAAH")
+                    else:
+                        # print("no")
+                        is_human = False
+                    debug_image = draw_info_text(
+                        debug_image,
+                        brect,
+                        handedness,
+                        keypoint_classifier_labels[hand_sign_id],
+                        point_history_classifier_labels[most_common_fg_id[0][0]],
+                        is_human,
+                        1
+                    )
+                else:
+                    debug_image = draw_info_text(
+                        debug_image,
+                        brect,
+                        handedness,
+                        keypoint_classifier_labels[hand_sign_id],
+                        point_history_classifier_labels[most_common_fg_id[0][0]],
+                        False,
+                        app_mode
+                    )
 
-        debug_image = draw_all_lines(debug_image, current_line_points, completed_lines)
-        # else:
-        #     point_history.append([0, 0])
 
+        else:
+            point_history.append([0, 0])
+        if app_mode ==2:
+            debug_image = draw_all_lines(debug_image, current_line_points, completed_lines)
+
+        if app_mode == 1:
+            debug_image = draw_landmarks_and_eraser(debug_image, landmark_list1)
+        debug_image = draw_info(debug_image, fps, mode, number, app_mode=app_mode)
 
         # Screen reflection #############################################################
         cv.imshow('Hand Gesture Recognition', debug_image)
@@ -261,9 +300,27 @@ def main(app_mode):
 def draw_persistent_line(image, line_points):
     if len(line_points) > 1:
         for i in range(len(line_points) - 1):
-            cv.line(image, (line_points[i][0], line_points[i][1]), 
+            cv.line(image, (line_points[i][0], line_points[i][1]),
                     (line_points[i + 1][0], line_points[i + 1][1]), (0, 0, 0), 2)
     return image
+
+
+def close_enough(list1, list2):
+    cpt_false = 0
+    cpt_true = 0
+    for i in range(len(list1)):
+        # print("there are the value that are being compared")
+        # print(i," i",  "list 1 ", list1[i], " list 2 ", list2[i])
+        if abs(list2[i]) < abs(list1[i] - (list1[i] * .35)) or abs(list2[i]) > abs(list1[i] + (list1[i] * .35)):
+            cpt_false = cpt_false + 1
+        else:
+            cpt_true = cpt_true + 1
+    total_cpt = cpt_true + cpt_false
+    if (cpt_true / total_cpt) > .7:
+        return True
+    else:
+        return False
+
 
 def select_mode(key, mode):
     number = -1
@@ -377,6 +434,34 @@ def logging_csv(number, mode, landmark_list, point_history_list):
             writer.writerow([number, *point_history_list])
     return
 
+
+def calculate_movement_speed(point_history):
+    speeds = []
+    for i in range(1, len(point_history)):
+        x1, y1 = point_history[i - 1]
+        x2, y2 = point_history[i]
+        speed = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5  # Euclidean distance
+        speeds.append(speed)
+    return speeds
+
+
+def is_rightward_movement(point_history):
+    if len(point_history) < 2:
+        return False
+    return all(x2 > x1 for (x1, y1), (x2, y2) in zip(point_history[:-1], point_history[1:]))
+
+
+def is_leftward_movement(point_history):
+    if len(point_history) < 2:
+        return False
+    return all(x2 < x1 for (x1, y1), (x2, y2) in zip(point_history[:-1], point_history[1:]))
+
+
+def is_consistent_movement(movement_speed, threshold=10, min_duration=5):
+    consistent_speed = [speed for speed in movement_speed if speed > threshold]
+    return len(consistent_speed) >= min_duration
+
+
 def draw_lines(image, lines, color=(0, 0, 0), thickness=2):
     for line in lines:
         for i in range(1, len(line)):
@@ -385,12 +470,12 @@ def draw_lines(image, lines, color=(0, 0, 0), thickness=2):
 
 def draw_all_lines(image, current_line_points, completed_lines):
     image = draw_lines(image, completed_lines)
-    if current_line_points: 
+    if current_line_points:
         image = draw_lines(image, [current_line_points])
     return image
 
 
-def draw_landmarks_and_eraser(image, landmark_point, hand_sign_id):
+def draw_landmarks_and_eraser(image, landmark_point, hand_sign_id=0):
     if len(landmark_point) > 0:
         # Thumb
         cv.line(image, tuple(landmark_point[2]), tuple(landmark_point[3]),
@@ -574,7 +659,7 @@ def draw_landmarks_and_eraser(image, landmark_point, hand_sign_id):
             cv.circle(image, (landmark[0], landmark[1]), 8, (255, 255, 255),
                       -1)
             cv.circle(image, (landmark[0], landmark[1]), 8, (0, 0, 0), 1)
-    
+
     if hand_sign_id == 6:
         eraser_center = (landmark_point[8][0], landmark_point[8][1])
         eraser_radius = 20  # Set the size of the eraser
@@ -607,21 +692,31 @@ def draw_bounding_rect(use_brect, image, brect):
 
 
 def draw_info_text(image, brect, handedness, hand_sign_text,
-                   finger_gesture_text):
+                   finger_gesture_text, thing, app_mode):
+    print(app_mode)
     cv.rectangle(image, (brect[0], brect[1]), (brect[2], brect[1] - 22),
                  (0, 0, 0), -1)
 
     info_text = handedness.classification[0].label[0:]
-    if hand_sign_text != "":
-        info_text = info_text + ':' + hand_sign_text
-    cv.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
-               cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv.LINE_AA)
+    if app_mode != 1:
+        print("si si ")
+        if hand_sign_text != "":
+            info_text = info_text + ':' + hand_sign_text
+        cv.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv.LINE_AA)
 
-    if finger_gesture_text != "":
-        cv.putText(image, "Finger Gesture:" + finger_gesture_text, (10, 60),
-                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 4, cv.LINE_AA)
-        cv.putText(image, "Finger Gesture:" + finger_gesture_text, (10, 60),
-                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2,
+        if finger_gesture_text != "":
+            cv.putText(image, "Finger Gesture:" + finger_gesture_text, (10, 60),
+                       cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 4, cv.LINE_AA)
+            cv.putText(image, "Finger Gesture:" + finger_gesture_text, (10, 60),
+                       cv.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2,
+                       cv.LINE_AA)
+
+
+    if thing:
+        #print("we are in teh fukcing condition")
+        cv.putText(image, "Congratulations you are indeed human", (10, 80),
+                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2,
                    cv.LINE_AA)
 
     return image
@@ -633,7 +728,7 @@ def draw_point_history(image, point_history):
         if point[0] != 0 and point[1] != 0:
             if prev_point is not None:
                 cv.line(image, (prev_point[0], prev_point[1]), (point[0], point[1]), (0, 0, 0), 2)
-            prev_point = point  
+            prev_point = point
     return image
 
 
@@ -642,11 +737,18 @@ def laser_point_history(point):
         pyautogui.moveTo((point[0] * SCREEN_WIDTH)/CAMERA_DETECT_WIDTH, (point[1] * SCREEN_HEIGHT)/CAMERA_DETECT_HEIGHT)
 
 
-def draw_info(image, fps, mode, number):
-    cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
-               1.0, (0, 0, 0), 4, cv.LINE_AA)
-    cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
-               1.0, (255, 255, 255), 2, cv.LINE_AA)
+def draw_info(image, fps, mode, number, app_mode=0):
+    if app_mode == 1:
+        cv.putText(image, "VERIFY THAT YOU ARE A HUMAN", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2,
+                   cv.LINE_AA)
+        cv.putText(image, "Copy the gesture that is on the screen", (10, 50), cv.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255),
+                   2, cv.LINE_AA)
+    else:
+        cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
+                   1.0, (0, 0, 0), 4, cv.LINE_AA)
+        cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
+                   1.0, (255, 255, 255), 2, cv.LINE_AA)
+
 
     mode_string = ['Logging Key Point', 'Logging Point History']
     if 1 <= mode <= 2:
@@ -660,27 +762,19 @@ def draw_info(image, fps, mode, number):
     return image
 
 def run_powerpoint():
-    action_idx = 0
-
     def open_presentation():
         presentation_path = r"TestPowerpoint.pptx"
         os.startfile(presentation_path)
-        time.sleep(5)  # Adjust time as necessary
+        time.sleep(5)
 
         engine = pyttsx3.init()
-        # Add any additional speech functionality here
 
-    # thread = threading.Thread(target=open_presentation)
-    # thread.start()
-    # main(action_idx)
+    thread = threading.Thread(target=open_presentation)
+    thread.start()
+    main(0)
     mainMenu.draw_buttons(False)
 
 def run_captcha():
-
-    mainMenu.draw_buttons(False)
-
-def run_draw():
-
     class Captcha_Menu:
         def __init__(self):
             self.btn_list = []
@@ -689,11 +783,15 @@ def run_draw():
             self.root.geometry('500x400')
 
         def start(self):
-            
             self.root.mainloop()
 
-    # main(2)
-    action_idx = 2
+
+    main(1)
+
+    mainMenu.draw_buttons(False)
+
+def run_draw():
+    main(2)
 
     mainMenu.draw_buttons(False)
 
@@ -740,6 +838,7 @@ if __name__ == '__main__':
     CAMERA_DETECT_WIDTH = 960
     CAMERA_DETECT_HEIGHT = 540
 
+    is_human = False
     # run_powerpoint()
     # main()
     # app_mode -> 0: Present 1: Captcha 2: Draw
