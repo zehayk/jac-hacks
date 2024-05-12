@@ -182,15 +182,11 @@ def main(app_mode):
                 # Hand sign classification
                 hand_sign_id = keypoint_classifier(pre_processed_landmark_list)
 
-                # now = datetime.datetime.now()
-
                 cur_window = get_focused_window_title()
                 print(cur_window)
 
                 if hand_sign_id == 2:  # Point gesture
                     if app_mode == 0:
-                        print("AAAAA")
-                        # print(hand_landmarks[8])
                         laser_point_history(landmark_list[8])
                         point_history.append([0, 0])
                     else:
@@ -663,8 +659,9 @@ def draw_info(image, fps, mode, number):
                        cv.LINE_AA)
     return image
 
-
 def run_powerpoint():
+    action_idx = 0
+
     def open_presentation():
         presentation_path = r"TestPowerpoint.pptx"
         os.startfile(presentation_path)
@@ -673,23 +670,66 @@ def run_powerpoint():
         engine = pyttsx3.init()
         # Add any additional speech functionality here
 
-    thread = threading.Thread(target=open_presentation)
-    thread.start()
-    main(0)
-
+    # thread = threading.Thread(target=open_presentation)
+    # thread.start()
+    # main(action_idx)
+    mainMenu.draw_buttons(False)
 
 def run_captcha():
-    pass
 
+    mainMenu.draw_buttons(False)
 
 def run_draw():
-    main(2)
 
-def command_pptx():
-    run_powerpoint()
-    if btn_pptx['text'] == 'Present 😎':
-        btn_pptx.config(text="Stop")
+    class Captcha_Menu:
+        def __init__(self):
+            self.btn_list = []
+            self.root = Tk()
+            self.root.title("ARE YOU HUMAN ??")
+            self.root.geometry('500x400')
 
+        def start(self):
+            
+            self.root.mainloop()
+
+    # main(2)
+    action_idx = 2
+
+    mainMenu.draw_buttons(False)
+
+
+class MainMenu:
+    def __init__(self):
+        self.btn_list = []
+        self.root = Tk()
+        self.root.title("ByteMasters")
+        self.root.geometry('400x300')
+
+    def start(self):
+        self.draw_buttons()
+
+        self.root.mainloop()
+
+    def go_back(self):
+        self.draw_buttons()
+
+    def draw_buttons(self, show=True):
+        if not show:
+            for btn in self.btn_list:
+                btn.place_forget()
+            btn_back = Button(self.root, text='🔙 Back', command=self.go_back)
+            btn_back.place(x=100, y=25)
+        else:
+            btn_pptx = Button(self.root, text='Present 😎', command=run_powerpoint)
+            btn_pptx.place(x=100, y=25)
+
+            btn_captcha = Button(self.root, text='Are you a robot? 🤖', command=run_captcha)
+            btn_captcha.place(x=100, y=125)
+
+            btn_draw = Button(self.root, text='Let\'s draw! 🎨', command=run_draw)
+            btn_draw.place(x=100, y=225)
+
+            self.btn_list = [btn_pptx, btn_captcha, btn_draw]
 
 
 
@@ -704,17 +744,8 @@ if __name__ == '__main__':
     # main()
     # app_mode -> 0: Present 1: Captcha 2: Draw
 
-    root = Tk()
-    root.title("ByteMasters")
-    root.geometry('400x300')
 
-    btn_pptx = Button(root, text='Present 😎', command=run_powerpoint)
-    btn_pptx.place(x=100, y=25)
 
-    btn_captcha = Button(root, text='Are you a robot? 🤖', command=run_captcha)
-    btn_captcha.place(x=100, y=125)
+    mainMenu = MainMenu()
+    mainMenu.start()
 
-    btn_draw = Button(root, text='Let\'s draw! 🎨', command=run_draw)
-    btn_draw.place(x=100, y=225)
-
-    root.mainloop()
