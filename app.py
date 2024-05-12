@@ -22,6 +22,7 @@ from model import KeyPointClassifier
 from model import PointHistoryClassifier
 import platform
 import pygetwindow as gw
+from tkinter import *
 
 last_action_time = time.time()
 
@@ -73,7 +74,7 @@ def pptx_function(hand_sign_id):
         print("PRINTED UP")
 
 
-def main():
+def main(app_mode):
     # Argument parsing #################################################################
     last_action_time = time.time()
     args = get_args()
@@ -185,7 +186,7 @@ def main():
 
                 if hand_sign_id == 2:  # Point gesture
                     point_history.append(landmark_list[8])
-                if hand_sign_id == 4 or hand_sign_id == 5:  # pptx actions
+                if app_mode == 0 and (hand_sign_id == 4 or hand_sign_id == 5):  # pptx actions
                     print("aa")
                     print(cur_window)
                     print((time.time() - last_action_time) > 1)
@@ -233,17 +234,6 @@ def main():
     cap.release()
     cv.destroyAllWindows()
 
-def run_powerpoint():
-    def open_presentation():
-        presentation_path = r"TestPowerpoint.pptx"
-        os.startfile(presentation_path)
-        time.sleep(5)  # Adjust time as necessary
-
-        engine = pyttsx3.init()
-        # Add any additional speech functionality here
-
-    thread = threading.Thread(target=open_presentation)
-    thread.start()
 
 def select_mode(key, mode):
     number = -1
@@ -603,6 +593,44 @@ def draw_info(image, fps, mode, number):
     return image
 
 
+def run_powerpoint():
+    def open_presentation():
+        presentation_path = r"TestPowerpoint.pptx"
+        os.startfile(presentation_path)
+        time.sleep(5)  # Adjust time as necessary
+
+        engine = pyttsx3.init()
+        # Add any additional speech functionality here
+
+    thread = threading.Thread(target=open_presentation)
+    thread.start()
+    main(0)
+
+
+def run_captcha():
+    pass
+
+
+def run_draw():
+    pass
+
+
 if __name__ == '__main__':
-    run_powerpoint()
-    main()
+    # run_powerpoint()
+    # main()
+    # app_mode -> 0: Present 1: Captcha 2: Draw
+
+    root = Tk()
+
+    root.geometry('300x250')
+
+    btn_pptx = Button(root, text='Present 😎', command=run_powerpoint)
+    btn_pptx.place(x=100, y=20)
+
+    btn_pptx = Button(root, text='Are you a robot? 🤖', command=run_captcha)
+    btn_pptx.place(x=100, y=60)
+
+    btn_pptx = Button(root, text='Let\'s draw! 🎨', command=run_draw)
+    btn_pptx.place(x=100, y=100)
+
+    root.mainloop()
