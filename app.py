@@ -7,7 +7,6 @@ import itertools
 from collections import Counter
 from collections import deque
 from pywinauto.keyboard import send_keys
-import datetime
 import pyttsx3
 import time
 import os
@@ -21,8 +20,10 @@ import mediapipe as mp
 from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
+import platform
+import pygetwindow as gw
 
-last_action_time = datetime.datetime.now()
+last_action_time = time.time()
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -51,6 +52,25 @@ def send_back():
 
 def send_next():
     print("S " + last_action_time)
+
+def get_focused_window_title():
+    if platform.system() == "Windows":
+        focused_window = gw.getActiveWindow()
+        if focused_window is not None:
+            return focused_window.title
+        else:
+            return "No window is currently focused"
+    else:
+        return "Not running on Windows"
+
+
+def pptx_function(hand_sign_id):
+    if hand_sign_id == 4:  # Skip
+        pyautogui.press("down")
+        print("PRINTED DOWN")
+    if hand_sign_id == 5:  # Back
+        pyautogui.press("up")
+        print("PRINTED UP")
 
 
 def main():
@@ -159,43 +179,24 @@ def main():
                 hand_sign_id = keypoint_classifier(pre_processed_landmark_list)
 
                 # now = datetime.datetime.now()
-                
+
+                cur_window = get_focused_window_title()
+                print(cur_window)
+
                 if hand_sign_id == 2:  # Point gesture
                     point_history.append(landmark_list[8])
-                if hand_sign_id == 4:  # Back
-                    if ((time.time() - last_action_time)) > 1:
-                        pyautogui.press("left")
+                if hand_sign_id == 4 or hand_sign_id == 5:  # pptx actions
+                    print("aa")
+                    print(cur_window)
+                    print((time.time() - last_action_time) > 1)
+                    print(cur_window.endswith("PowerPoint"))
+                    print()
+                    if (time.time() - last_action_time) > 1 and cur_window.endswith("PowerPoint"):
+                        pptx_function(hand_sign_id)
                         last_action_time = time.time()
-                if hand_sign_id == 5:  # Back
-                    if ((time.time() - last_action_time)) > 1:
-                        pyautogui.press("right")
-                        last_action_time = time.time()
-                    
-                # else:
-                    # if hand_sign_id == 4:  # Skip
-                    #     if (now - last_action_time).total_seconds() > 1:
-                    #         last_action_time = now
-                    #         send_next()
-                    # elif hand_sign_id == 5:  # Back
-                    #     if (now - last_action_time).total_seconds() > 1:
-                    #         last_action_time = now
-                    #         send_back()
-                    # if hand_sign_id == 5:  # Back
-                    #     # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
-                    #     print("asda")
-                    #     pyautogui.press("right")
-                    # if hand_sign_id == 4:  # Back
-                    #     # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
-                    #     print("asda")
-                    #     pyautogui.press("left")
-                            # last_action_time = datetime.datetime.now()
 
-                    # else:
-                    # if hand_sign_id == 5:
-                    #     if (datetime.datetime.now() - last_action_time).total_seconds() > 1:
-                    #         print(f"BACKING {last_action_time}")
-                    #         last_action_time = datetime.datetime.now()
                     point_history.append([0, 0])
+
 
                 # Finger gesture classification
                 finger_gesture_id = 0
@@ -242,7 +243,7 @@ def run_powerpoint():
         # Add any additional speech functionality here
 
     thread = threading.Thread(target=open_presentation)
-    thread.start( )
+    thread.start()
 
 def select_mode(key, mode):
     number = -1
@@ -603,4 +604,5 @@ def draw_info(image, fps, mode, number):
 
 
 if __name__ == '__main__':
+    run_powerpoint()
     main()
