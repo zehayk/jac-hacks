@@ -665,16 +665,16 @@ def draw_info(image, fps, mode, number):
 
 
 def run_powerpoint():
-    # def open_presentation():
-    #     presentation_path = r"TestPowerpoint.pptx"
-    #     os.startfile(presentation_path)
-    #     time.sleep(5)  # Adjust time as necessary
+    def open_presentation():
+        presentation_path = r"TestPowerpoint.pptx"
+        os.startfile(presentation_path)
+        time.sleep(5)  # Adjust time as necessary
 
-    #     engine = pyttsx3.init()
-    #     # Add any additional speech functionality here
+        engine = pyttsx3.init()
+        # Add any additional speech functionality here
 
-    # thread = threading.Thread(target=open_presentation)
-    # thread.start()
+    thread = threading.Thread(target=open_presentation)
+    thread.start()
     main(0)
 
 
@@ -708,7 +708,7 @@ if __name__ == '__main__':
     root.title("ByteMasters")
     root.geometry('400x300')
 
-    btn_pptx = Button(root, text='Present 😎', command=command_pptx)
+    btn_pptx = Button(root, text='Present 😎', command=run_powerpoint)
     btn_pptx.place(x=100, y=25)
 
     btn_captcha = Button(root, text='Are you a robot? 🤖', command=run_captcha)
