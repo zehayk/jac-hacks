@@ -89,6 +89,9 @@ def main(app_mode):
 
     use_brect = True
 
+    current_line_points = []
+    completed_lines = []
+
     # Camera preparation ###############################################################
     cap = cv.VideoCapture(cap_device)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
@@ -192,6 +195,7 @@ def main(app_mode):
                         point_history.append([0, 0])
                     else:
                         point_history.append(landmark_list[8])
+
                 if app_mode == 0 and (hand_sign_id == 4 or hand_sign_id == 5):  # pptx actions
                     print("aa")
                     print(cur_window)
@@ -204,6 +208,19 @@ def main(app_mode):
 
                     point_history.append([0, 0])
 
+                if hand_sign_id == 2: 
+                    current_line_points.append([landmark_list[8][0], landmark_list[8][1]])
+                elif hand_sign_id == 3 and current_line_points:  
+                    completed_lines.append(current_line_points.copy())
+                    current_line_points.clear()
+
+                    point_history.append([0, 0])
+
+                # Eraser functionality
+                if hand_sign_id == 6:
+                    eraser_center = (landmark_list[8][0], landmark_list[8][1])
+                    eraser_radius = 20
+                    completed_lines = erase_lines(completed_lines, eraser_center, eraser_radius)
 
                 # Finger gesture classification
                 finger_gesture_id = 0
@@ -219,7 +236,7 @@ def main(app_mode):
 
                 # Drawing part
                 debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-                debug_image = draw_landmarks(debug_image, landmark_list)
+                debug_image = draw_landmarks_and_eraser(debug_image, landmark_list, hand_sign_id)
                 debug_image = draw_info_text(
                     debug_image,
                     brect,
@@ -227,19 +244,30 @@ def main(app_mode):
                     keypoint_classifier_labels[hand_sign_id],
                     point_history_classifier_labels[most_common_fg_id[0][0]],
                 )
-        else:
-            point_history.append([0, 0])
 
-        debug_image = draw_point_history(debug_image, point_history)
-        debug_image = draw_info(debug_image, fps, mode, number)
+        debug_image = draw_all_lines(debug_image, current_line_points, completed_lines)
+        # else:
+        #     point_history.append([0, 0])
+
 
         # Screen reflection #############################################################
         cv.imshow('Hand Gesture Recognition', debug_image)
+
+        key = cv.waitKey(10)
+        if key == 27:  # ESC
+            break
 
         # run_powerpoint()
     cap.release()
     cv.destroyAllWindows()
 
+
+def draw_persistent_line(image, line_points):
+    if len(line_points) > 1:
+        for i in range(len(line_points) - 1):
+            cv.line(image, (line_points[i][0], line_points[i][1]), 
+                    (line_points[i + 1][0], line_points[i + 1][1]), (0, 0, 0), 2)
+    return image
 
 def select_mode(key, mode):
     number = -1
@@ -353,8 +381,20 @@ def logging_csv(number, mode, landmark_list, point_history_list):
             writer.writerow([number, *point_history_list])
     return
 
+def draw_lines(image, lines, color=(0, 0, 0), thickness=2):
+    for line in lines:
+        for i in range(1, len(line)):
+            cv.line(image, (line[i-1][0], line[i-1][1]), (line[i][0], line[i][1]), color, thickness)
+    return image
 
-def draw_landmarks(image, landmark_point):
+def draw_all_lines(image, current_line_points, completed_lines):
+    image = draw_lines(image, completed_lines)
+    if current_line_points: 
+        image = draw_lines(image, [current_line_points])
+    return image
+
+
+def draw_landmarks_and_eraser(image, landmark_point, hand_sign_id):
     if len(landmark_point) > 0:
         # Thumb
         cv.line(image, tuple(landmark_point[2]), tuple(landmark_point[3]),
@@ -538,9 +578,28 @@ def draw_landmarks(image, landmark_point):
             cv.circle(image, (landmark[0], landmark[1]), 8, (255, 255, 255),
                       -1)
             cv.circle(image, (landmark[0], landmark[1]), 8, (0, 0, 0), 1)
+    
+    if hand_sign_id == 6:
+        eraser_center = (landmark_point[8][0], landmark_point[8][1])
+        eraser_radius = 20  # Set the size of the eraser
+        cv.circle(image, eraser_center, eraser_radius, (0, 0, 255), -1)  # Red circle
 
     return image
 
+def erase_lines(lines, eraser_center, eraser_radius):
+    new_lines = []
+    for line in lines:
+        new_line = []
+        for point in line:
+            if cv.norm(np.array(eraser_center) - np.array(point)) > eraser_radius:
+                new_line.append(point)
+            else:
+                if len(new_line) > 1:
+                    new_lines.append(new_line)
+                new_line = []
+        if new_line:
+            new_lines.append(new_line)
+    return new_lines
 
 def draw_bounding_rect(use_brect, image, brect):
     if use_brect:
@@ -573,11 +632,12 @@ def draw_info_text(image, brect, handedness, hand_sign_text,
 
 
 def draw_point_history(image, point_history):
-    for index, point in enumerate(point_history):
+    prev_point = None
+    for point in point_history:
         if point[0] != 0 and point[1] != 0:
-            cv.circle(image, (point[0], point[1]), 1 + int(index / 2),
-                      (152, 251, 152), 2)
-
+            if prev_point is not None:
+                cv.line(image, (prev_point[0], prev_point[1]), (point[0], point[1]), (0, 0, 0), 2)
+            prev_point = point  
     return image
 
 
@@ -623,7 +683,7 @@ def run_captcha():
 
 
 def run_draw():
-    pass
+    main(2)
 
 
 if __name__ == '__main__':
