@@ -102,7 +102,7 @@ def main(app_mode):
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
         static_image_mode=use_static_image_mode,
-        max_num_hands=2,
+        max_num_hands=1,
         min_detection_confidence=min_detection_confidence,
         min_tracking_confidence=min_tracking_confidence,
     )
@@ -251,7 +251,6 @@ def main(app_mode):
                 if app_mode == 1:
                     if close_enough(pre_processed_landmark_list, landmark_list1_unitaire):
                         is_human = True
-                        # print("RAAAAAAAAAAAAH")
                     else:
                         # print("no")
                         is_human = False
@@ -699,7 +698,6 @@ def draw_info_text(image, brect, handedness, hand_sign_text,
 
     info_text = handedness.classification[0].label[0:]
     if app_mode != 1:
-        print("si si ")
         if hand_sign_text != "":
             info_text = info_text + ':' + hand_sign_text
         cv.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
@@ -763,7 +761,7 @@ def draw_info(image, fps, mode, number, app_mode=0):
 
 def run_powerpoint():
     def open_presentation():
-        presentation_path = r"TestPowerpoint.pptx"
+        presentation_path = r"GoodOne.pptx"
         os.startfile(presentation_path)
         time.sleep(5)
 
@@ -783,8 +781,24 @@ def run_captcha():
             self.root.geometry('500x400')
 
         def start(self):
+            w = Label(self.root, text="Verify you are human")
+            w.pack()
+            print("aD")
             self.root.mainloop()
 
+
+        def result(self, result):
+            if result:
+                w = Label(self.root, text="Congrats! you are human!")
+                w.pack()
+            else:
+                w = Label(self.root, text="How do you even manage to fail that :/")
+                w.pack()
+
+
+    # captcha = Captcha_Menu()
+    # captcha.start()
+    # captcha.result(main(1))
 
     main(1)
 
