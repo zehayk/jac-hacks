@@ -55,6 +55,7 @@ def send_next():
 
 def main():
     # Argument parsing #################################################################
+    last_action_time = time.time()
     args = get_args()
 
     cap_device = args.device
@@ -162,11 +163,13 @@ def main():
                 if hand_sign_id == 2:  # Point gesture
                     point_history.append(landmark_list[8])
                 if hand_sign_id == 4:  # Back
-                    # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
-                    pyautogui.press("up")
+                    if ((time.time() - last_action_time)) > 1:
+                        pyautogui.press("left")
+                        last_action_time = time.time()
                 if hand_sign_id == 5:  # Back
-                    # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
-                    pyautogui.press("down")
+                    if ((time.time() - last_action_time)) > 1:
+                        pyautogui.press("right")
+                        last_action_time = time.time()
                     
                 # else:
                     # if hand_sign_id == 4:  # Skip
@@ -186,6 +189,12 @@ def main():
                     #     print("asda")
                     #     pyautogui.press("left")
                             # last_action_time = datetime.datetime.now()
+
+                    # else:
+                    # if hand_sign_id == 5:
+                    #     if (datetime.datetime.now() - last_action_time).total_seconds() > 1:
+                    #         print(f"BACKING {last_action_time}")
+                    #         last_action_time = datetime.datetime.now()
                     point_history.append([0, 0])
 
                 # Finger gesture classification
@@ -225,7 +234,7 @@ def main():
 
 def run_powerpoint():
     def open_presentation():
-        presentation_path = r"C:\Users\antho\OneDrive\Desktop\TestPowerpoint.pptx"
+        presentation_path = r"TestPowerpoint.pptx"
         os.startfile(presentation_path)
         time.sleep(5)  # Adjust time as necessary
 
