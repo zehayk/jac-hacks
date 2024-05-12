@@ -594,16 +594,16 @@ def draw_info(image, fps, mode, number):
 
 
 def run_powerpoint():
-    def open_presentation():
-        presentation_path = r"TestPowerpoint.pptx"
-        os.startfile(presentation_path)
-        time.sleep(5)  # Adjust time as necessary
+    # def open_presentation():
+    #     presentation_path = r"TestPowerpoint.pptx"
+    #     os.startfile(presentation_path)
+    #     time.sleep(5)  # Adjust time as necessary
 
-        engine = pyttsx3.init()
-        # Add any additional speech functionality here
+    #     engine = pyttsx3.init()
+    #     # Add any additional speech functionality here
 
-    thread = threading.Thread(target=open_presentation)
-    thread.start()
+    # thread = threading.Thread(target=open_presentation)
+    # thread.start()
     main(0)
 
 
@@ -613,6 +613,10 @@ def run_captcha():
 
 def run_draw():
     pass
+def command_pptx():
+    run_powerpoint()
+    if btn_pptx['text'] == 'Present 😎':
+        btn_pptx.config(text="Stop")
 
 
 if __name__ == '__main__':
@@ -621,16 +625,16 @@ if __name__ == '__main__':
     # app_mode -> 0: Present 1: Captcha 2: Draw
 
     root = Tk()
+    root.title("ByteMasters")
+    root.geometry('400x300')
 
-    root.geometry('300x250')
+    btn_pptx = Button(root, text='Present 😎', command=command_pptx)
+    btn_pptx.place(x=100, y=25)
 
-    btn_pptx = Button(root, text='Present 😎', command=run_powerpoint)
-    btn_pptx.place(x=100, y=20)
+    btn_captcha = Button(root, text='Are you a robot? 🤖', command=run_captcha)
+    btn_captcha.place(x=100, y=125)
 
-    btn_pptx = Button(root, text='Are you a robot? 🤖', command=run_captcha)
-    btn_pptx.place(x=100, y=60)
-
-    btn_pptx = Button(root, text='Let\'s draw! 🎨', command=run_draw)
-    btn_pptx.place(x=100, y=100)
+    btn_draw = Button(root, text='Let\'s draw! 🎨', command=run_draw)
+    btn_draw.place(x=100, y=225)
 
     root.mainloop()
