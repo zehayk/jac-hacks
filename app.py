@@ -228,7 +228,7 @@ def main():
         # Screen reflection #############################################################
         cv.imshow('Hand Gesture Recognition', debug_image)
 
-        run_powerpoint()
+        # run_powerpoint()
     cap.release()
     cv.destroyAllWindows()
 
