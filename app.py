@@ -7,7 +7,12 @@ import itertools
 from collections import Counter
 from collections import deque
 from pywinauto.keyboard import send_keys
-
+import datetime
+import pyttsx3
+import time
+import os
+import threading
+import pyautogui
 
 import cv2 as cv
 import numpy as np
@@ -17,6 +22,7 @@ from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
 
+last_action_time = datetime.datetime.now()
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -38,6 +44,13 @@ def get_args():
     args = parser.parse_args()
 
     return args
+
+
+def send_back():
+    print("N " + last_action_time)
+
+def send_next():
+    print("S " + last_action_time)
 
 
 def main():
@@ -143,9 +156,38 @@ def main():
 
                 # Hand sign classification
                 hand_sign_id = keypoint_classifier(pre_processed_landmark_list)
+
+                # now = datetime.datetime.now()
+                
                 if hand_sign_id == 2:  # Point gesture
                     point_history.append(landmark_list[8])
-                else:
+                if hand_sign_id == 4:  # Back
+                    # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
+                    print("asda")
+                    pyautogui.press("left")
+                if hand_sign_id == 5:  # Back
+                    # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
+                    print("asda")
+                    pyautogui.press("right")
+                    
+                # else:
+                    # if hand_sign_id == 4:  # Skip
+                    #     if (now - last_action_time).total_seconds() > 1:
+                    #         last_action_time = now
+                    #         send_next()
+                    # elif hand_sign_id == 5:  # Back
+                    #     if (now - last_action_time).total_seconds() > 1:
+                    #         last_action_time = now
+                    #         send_back()
+                    # if hand_sign_id == 5:  # Back
+                    #     # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
+                    #     print("asda")
+                    #     pyautogui.press("right")
+                    # if hand_sign_id == 4:  # Back
+                    #     # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
+                    #     print("asda")
+                    #     pyautogui.press("left")
+                            # last_action_time = datetime.datetime.now()
                     point_history.append([0, 0])
 
                 # Finger gesture classification
@@ -179,9 +221,21 @@ def main():
         # Screen reflection #############################################################
         cv.imshow('Hand Gesture Recognition', debug_image)
 
+        run_powerpoint()
     cap.release()
     cv.destroyAllWindows()
 
+def run_powerpoint():
+    def open_presentation():
+        presentation_path = r"C:\Users\antho\OneDrive\Desktop\TestPowerpoint.pptx"
+        os.startfile(presentation_path)
+        time.sleep(5)  # Adjust time as necessary
+
+        engine = pyttsx3.init()
+        # Add any additional speech functionality here
+
+    thread = threading.Thread(target=open_presentation)
+    thread.start( )
 
 def select_mode(key, mode):
     number = -1
