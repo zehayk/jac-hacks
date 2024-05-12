@@ -163,12 +163,10 @@ def main():
                     point_history.append(landmark_list[8])
                 if hand_sign_id == 4:  # Back
                     # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
-                    print("asda")
-                    pyautogui.press("left")
+                    pyautogui.press("up")
                 if hand_sign_id == 5:  # Back
                     # if ((datetime.datetime.now() - last_action_time).total_seconds()) > 1:
-                    print("asda")
-                    pyautogui.press("right")
+                    pyautogui.press("down")
                     
                 # else:
                     # if hand_sign_id == 4:  # Skip
