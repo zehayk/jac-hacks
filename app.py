@@ -95,6 +95,7 @@ def main(app_mode):
 
     # Camera preparation ###############################################################
     cap = cv.VideoCapture(cap_device)
+    # cap = cv.VideoCapture("test2.mp4")
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
@@ -153,16 +154,27 @@ def main(app_mode):
     # landmark_list1 = captcha1
     landmark_list1_unitaire = pre_process_landmark(landmark_list1)
     while True:
+        curtime = time.time()
         fps = cvFpsCalc.get()
+        print(f"fps: {fps}")
+        print(f"time passed: {time.time() - curtime}")
+        curtime = time.time()
 
         # Process Key (ESC: end) #################################################
-        key = cv.waitKey(10)
-        if key == 27:  # ESC
-            break
-        number, mode = select_mode(key, mode)
+        # key = cv.waitKey(10)
+        # if key == 27:  # ESC
+        #     break
+        # number, mode = select_mode(key, mode)
+        number = -1
+
 
         # Camera capture #####################################################
         ret, image = cap.read()
+        width = cap.get(3)  # float `width`
+        height = cap.get(4)
+        print(f"w: {width} h: {height}")
+        print(f"time passed: {time.time() - curtime}")
+        curtime = time.time()
         if not ret:
             break
         image = cv.flip(image, 1)  # Mirror display
@@ -170,10 +182,14 @@ def main(app_mode):
 
         # Detection implementation #############################################################
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+        print(f"time passed: {time.time() - curtime}")
+        curtime = time.time()
 
         image.flags.writeable = False
         results = hands.process(image)
         image.flags.writeable = True
+        print(f"time passed: {time.time() - curtime}")
+        curtime = time.time()
 
         #  ####################################################################
         if results.multi_hand_landmarks is not None:
@@ -197,21 +213,22 @@ def main(app_mode):
                 hand_sign_id = keypoint_classifier(pre_processed_landmark_list)
 
                 cur_window = get_focused_window_title()
-                print(cur_window)
+                # print(cur_window)
 
                 if hand_sign_id == 2:  # Point gesture
                     if app_mode == 0:
-                        laser_point_history(landmark_list[8])
+                        # laser_point_history(landmark_list[8])
+                        threading.Thread(target=laser_point_history, args=(landmark_list[8],),).start()
                         point_history.append([0, 0])
                     else:
                         point_history.append(landmark_list[8])
 
                 if app_mode == 0 and (hand_sign_id == 4 or hand_sign_id == 5):  # pptx actions
-                    print("aa")
-                    print(cur_window)
-                    print((time.time() - last_action_time) > 1)
-                    print(cur_window.endswith("PowerPoint"))
-                    print()
+                    # print("aa")
+                    # print(cur_window)
+                    # print((time.time() - last_action_time) > 1)
+                    # print(cur_window.endswith("PowerPoint"))
+                    # print()
                     if (time.time() - last_action_time) > 1 and cur_window.endswith("PowerPoint"):
                         pptx_function(hand_sign_id)
                         last_action_time = time.time()
@@ -231,13 +248,13 @@ def main(app_mode):
                     eraser_center = (landmark_list[8][0], landmark_list[8][1])
                     eraser_radius = 20
                     completed_lines = erase_lines(completed_lines, eraser_center, eraser_radius)
+                print(keypoint_classifier_labels[hand_sign_id])
 
                 # Finger gesture classification
                 finger_gesture_id = 0
                 point_history_len = len(pre_processed_point_history_list)
                 if point_history_len == (history_length * 2):
-                    finger_gesture_id = point_history_classifier(
-                        pre_processed_point_history_list)
+                    finger_gesture_id = point_history_classifier(pre_processed_point_history_list)
 
                 # Calculates the gesture IDs in the latest detection
                 finger_gesture_history.append(finger_gesture_id)
@@ -277,6 +294,8 @@ def main(app_mode):
 
         else:
             point_history.append([0, 0])
+        print(f"time passed: {time.time() - curtime}")
+        curtime = time.time()
         if app_mode ==2:
             debug_image = draw_all_lines(debug_image, current_line_points, completed_lines)
 
@@ -286,10 +305,16 @@ def main(app_mode):
 
         # Screen reflection #############################################################
         cv.imshow('Hand Gesture Recognition', debug_image)
+        print(f"time passed: {time.time() - curtime}")
+        curtime = time.time()
 
-        key = cv.waitKey(10)
+        key = cv.waitKey(1)
         if key == 27:  # ESC
             break
+        print(f"time passed: {time.time() - curtime}")
+        curtime = time.time()
+        print("aaaaaaaaaaaaa")
+        print("\n\n\n\n")
 
         # run_powerpoint()
     cap.release()
@@ -692,7 +717,7 @@ def draw_bounding_rect(use_brect, image, brect):
 
 def draw_info_text(image, brect, handedness, hand_sign_text,
                    finger_gesture_text, thing, app_mode):
-    print(app_mode)
+    # print(app_mode)
     cv.rectangle(image, (brect[0], brect[1]), (brect[2], brect[1] - 22),
                  (0, 0, 0), -1)
 
@@ -854,7 +879,7 @@ if __name__ == '__main__':
 
     is_human = False
     # run_powerpoint()
-    # main()
+    # `main`()
     # app_mode -> 0: Present 1: Captcha 2: Draw
 
 
